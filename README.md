@@ -2,9 +2,9 @@
 # make test
 
 
-================================================
-            MEMORY COMPARISON REPORT
-================================================
+
+# MEMORY COMPARISON REPORT
+
   Test Data: 16.21 MB (16,600 messages)
 
 ----------------------------------------------------------------------
@@ -31,31 +31,31 @@
   WITHOUT ReleasePayload       0.03      65.72      27.35
   WITH ReleasePayload        0.11      36.41      25.98
 
-================================================
-                      MEMORY SAVINGS ANALYSIS
-================================================
-  Max HeapAlloc:
+
+# MEMORY SAVINGS ANALYSIS
+
+## Max HeapAlloc:
     WITHOUT:      32.02 MB
     WITH:         12.58 MB
     SAVED:        19.44 MB  (60.7%)
 
-  Avg HeapAlloc:
+## Avg HeapAlloc:
     WITHOUT:      17.38 MB
     WITH:          6.96 MB
     SAVED:        10.41 MB  (59.9%)
 
-  Max RSS:
+## Max RSS:
     WITHOUT:      68.80 MB
     WITH:         36.83 MB
     SAVED:        31.97 MB  (46.5%)
 
-  Max RSS (External):
+## Max RSS (External):
     WITHOUT:      65.72 MB
     WITH:         36.41 MB
     SAVED:        29.31 MB  (44.6%)
 
 ----------------------------------------------------------------------
-  Memory Amplification (Max Memory / Data Size)
+#Memory Amplification (Max Memory / Data Size)
 ----------------------------------------------------------------------
   Metric                         WITHOUT         WITH    Reduction
   ------------------------- ------------ ------------ ------------
