@@ -1,0 +1,21 @@
+services:
+  pulsar:
+    image: apachepulsar/pulsar:3.1.0
+    container_name: pulsar-standalone
+    ports:
+      - "6650:6650"   # Pulsar binary protocol
+      - "8080:8080"   # Pulsar HTTP admin API
+    command: bin/pulsar standalone
+    volumes:
+      - pulsar_data:/pulsar/data
+      - pulsar_conf:/pulsar/conf
+    healthcheck:
+      test: ["CMD", "bin/pulsar-admin", "brokers", "healthcheck"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  pulsar_data:
+  pulsar_conf:
