@@ -1,5 +1,5 @@
 .PHONY: all build clean clean-results start-pulsar stop-pulsar produce consume test test-all analyze help
-.PHONY: test-memory test-memory-stress test-memory-compare test-pprof-collect generate-flamegraphs open-flamegraphs
+.PHONY: test-memory test-memory-stress test-memory-compare test-queue-compare test-pprof-collect generate-flamegraphs open-flamegraphs
 
 # Go 编译参数
 GOOS ?= $(shell go env GOOS)
@@ -9,7 +9,7 @@ GOARCH ?= $(shell go env GOARCH)
 TOTAL_SIZE ?= 200
 MESSAGE_SIZE ?= 1024
 QUEUE_SIZE ?= 1000
-BATCH_SIZE ?= 10
+BATCH_SIZE ?= 300
 MAX_BATCHES ?= 4
 SCENARIO ?= default
 COMPRESSION ?= none
@@ -30,6 +30,7 @@ help:
 	@echo "  make produce            - Produce test messages"
 	@echo "  make consume            - Consume messages and analyze memory"
 	@echo "  make test               - Run memory comparison test (with/without ReleasePayload)"
+	@echo "  make test-queue-compare - Compare memory usage with different queue-size"
 	@echo "  make test-memory        - Run quick memory test"
 	@echo "  make test-memory-stress - Run long-duration stress test with pprof"
 	@echo "  make test-memory-compare- Compare memory usage with/without ReleasePayload"
@@ -211,6 +212,53 @@ test-memory-compare: build
 	echo "  open results/flamegraph_with-release.svg"; \
 	echo "  go tool pprof -http=:8080 results/heap_no-release.pprof"; \
 	echo "  go tool pprof -http=:8081 results/heap_with-release.pprof"
+
+# ReceiverQueueSize 对比测试 (queue-size=1000 vs 100)
+test-queue-compare: build clean-results
+	@echo "============================================================"
+	@echo "Queue Size Comparison Test: 1000 vs 100"
+	@echo "(All tests use ReleasePayload for fair comparison)"
+	@echo "============================================================"
+	@mkdir -p results
+	@TOPIC="persistent://public/default/queue-compare-$$(date +%s)"; \
+	echo ""; \
+	echo "[Step 1/3] Producing $(STRESS_TOTAL_SIZE) MB test data..."; \
+	./bin/producer -topic=$$TOPIC -total=$$(($(STRESS_TOTAL_SIZE) * 1024 * 1024)) -size=$(MESSAGE_SIZE) -pprof-port=6070; \
+	echo ""; \
+	echo "[Step 2/3] Test 1: queue-size=1000 (default)"; \
+	echo "------------------------------------------------------------"; \
+	SUB1="queue1000-$$(date +%s)"; \
+	./bin/consumer \
+		-topic=$$TOPIC \
+		-sub=$$SUB1 \
+		-batch-size=$$(($(BATCH_SIZE) * 1024 * 1024)) \
+		-queue-size=1000 \
+		-max-batches=$(STRESS_MAX_BATCHES) \
+		-scenario=queue-1000 \
+		-release-payload \
+		-pprof-port=6060 \
+		-output=./results; \
+	echo ""; \
+	echo "[Step 3/3] Test 2: queue-size=100"; \
+	echo "------------------------------------------------------------"; \
+	SUB2="queue100-$$(date +%s)"; \
+	./bin/consumer \
+		-topic=$$TOPIC \
+		-sub=$$SUB2 \
+		-batch-size=$$(($(BATCH_SIZE) * 1024 * 1024)) \
+		-queue-size=100 \
+		-max-batches=$(STRESS_MAX_BATCHES) \
+		-scenario=queue-100 \
+		-release-payload \
+		-pprof-port=6061 \
+		-output=./results; \
+	echo ""; \
+	python3 ./scripts/compare-queue.py ./results; \
+	echo ""; \
+	echo "Output Files:"; \
+	echo "  results/stats_queue-1000.json"; \
+	echo "  results/stats_queue-100.json"; \
+	echo "  results/heap_queue-*.pprof"
 
 # 长时间压力测试 (带 pprof 收集)
 test-memory-stress: build
